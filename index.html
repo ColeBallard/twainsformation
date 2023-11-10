@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>twainsformation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>twainsformation</h1>
+        <form action="/submit" method="post" enctype="multipart/form-data">
+            <div>
+                <input type="file" id="fileUpload" name="file" accept=".txt">
+            </div>
+            <div>
+                <input type="text" id="textInput" name="textInput" value="Can you rewrite this in the style of Mark Twain?" placeholder="Can you rewrite this in the style of Mark Twain?">
+            </div>
+            <div>
+                <button type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
