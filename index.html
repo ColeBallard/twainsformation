@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>twainsformation</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>twainsformation</h1>
-        <form action="/submit" method="post" enctype="multipart/form-data">
+        <form id="gptForm" method="post" enctype="multipart/form-data">
             <div>
                 <input type="file" id="fileUpload" name="file" accept=".txt">
             </div>
@@ -20,6 +21,32 @@
                 <button type="submit">Submit</button>
             </div>
         </form>
+        <div id="responseDiv"></div>
     </div>
+
+    <script>
+    $(document).ready(function() {
+        $('#gptForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                type: 'POST',
+                url: '/submit-form', // Your Flask endpoint
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    // Assuming the response is the text you want to display
+                    $('#responseDiv').html(response);
+                },
+                error: function(xhr, status, error) {
+                    // Handle any errors here
+                    console.error("Error: " + error);
+                    $('#responseDiv').html("An error occurred: " + error);
+                }
+            });   
+        });
+    });
+    </script>
 </body>
 </html>
