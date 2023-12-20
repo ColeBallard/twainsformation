@@ -12,10 +12,21 @@
         <h1>twainsformation</h1>
         <form id="gptForm" method="post" enctype="multipart/form-data">
             <div>
-                <input type="file" id="fileUpload" name="file" accept=".txt">
+                <span class="inputLabel">File: </span><input type="file" id="fileUpload" name="fileUpload" accept=".txt">
             </div>
             <div>
-                <input type="text" id="textInput" name="textInput" value="Can you rewrite this in the style of Mark Twain?" placeholder="Can you rewrite this in the style of Mark Twain?">
+                <span class="inputLabel">Title: </span><input type="text" id="title" name="title" placeholder="The Grapes of Wrath">
+            </div>
+            <div>
+                <span class="inputLabel">Author: </span><input type="text" id="author" name="author" placeholder="John Steinbeck">
+            </div>
+            <div>
+                <span class="inputLabel">Prompt: </span><input type="text" id="prompt" name="prompt" placeholder="Can you rewrite this in the style of Mark Twain?">
+            </div>
+            <div>
+                <span class="inputLabel">ChatGPT Model: </span><select id="chatgptModel" name="chatgptModel">
+                    <option value="gpt-4-1106-preview">gpt-4-1106-preview</option>
+                </select>
             </div>
             <div>
                 <button type="submit">Submit</button>
@@ -29,6 +40,8 @@
         $('#gptForm').on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
+            var fileInput = document.getElementById('fileUpload');
+            formData.append("file", fileInput.files[0]);
             $.ajax({
                 type: 'POST',
                 url: '/submit-form', // Your Flask endpoint
