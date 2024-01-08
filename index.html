@@ -1,66 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>twainsformation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
 </head>
+
 <body>
     <div class="container">
         <h1>twainsformation</h1>
-        <form id="gptForm" method="post" enctype="multipart/form-data">
-            <div>
-                <span class="inputLabel">File: </span><input type="file" id="fileUpload" name="fileUpload" accept=".txt">
-            </div>
-            <div>
-                <span class="inputLabel">Title: </span><input type="text" id="title" name="title" placeholder="The Grapes of Wrath">
-            </div>
-            <div>
-                <span class="inputLabel">Author: </span><input type="text" id="author" name="author" placeholder="John Steinbeck">
-            </div>
-            <div>
-                <span class="inputLabel">Prompt: </span><input type="text" id="prompt" name="prompt" placeholder="Can you rewrite this in the style of Mark Twain?">
-            </div>
-            <div>
-                <span class="inputLabel">ChatGPT Model: </span><select id="chatgptModel" name="chatgptModel">
-                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                    <option value="gpt-4-1106-preview">gpt-4-1106-preview</option>
-                </select>
-            </div>
-            <div>
-                <button type="submit">Submit</button>
-            </div>
-        </form>
-        <div id="responseDiv"></div>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#" id="style-changer-tab">Style Changer</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="book-writer-tab">Book Writer</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="book-condenser-tab">Book Condenser</a>
+            </li>
+        </ul>
+        <div id="style-changer">
+            <form id="gptForm" method="post" enctype="multipart/form-data">
+                <div>
+                    <span class="inputLabel">File: </span><input type="file" id="fileUpload" name="fileUpload"
+                        accept=".txt"><div class="error" id="fileError"></div>
+                </div>
+                <div>
+                    <span class="inputLabel">Title: </span><input type="text" id="title" name="title"
+                        placeholder="The Grapes of Wrath"><div class="error" id="titleError"></div>
+                </div>
+                <div>
+                    <span class="inputLabel">Author: </span><input type="text" id="author" name="author"
+                        placeholder="John Steinbeck"><div class="error" id="authorError"></div>
+                </div>
+                <div>
+                    <span class="inputLabel">Prompt: </span><input type="text" id="prompt" name="prompt"
+                        placeholder="Can you rewrite this in the style of Mark Twain?"><div class="error" id="promptError"></div>
+                </div>
+                <div>
+                    <span class="inputLabel">ChatGPT Model: </span><select id="chatgptModel" name="chatgptModel">
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit">Submit</button>
+                </div>
+            </form>
+            <div id="responseDiv"></div>
+        </div>
+        <div id="book-writer">
+            
+        </div>
+        <div id="book-condenser">
+            
+        </div>
     </div>
 
     <script>
-    $(document).ready(function() {
-        $('#gptForm').on('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData(this);
-            var fileInput = document.getElementById('fileUpload');
-            formData.append("file", fileInput.files[0]);
-            $.ajax({
-                type: 'POST',
-                url: '/submit-form', // Your Flask endpoint
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function(response) {
-                    // Assuming the response is the text you want to display
-                    $('#responseDiv').html(response);
-                },
-                error: function(xhr, status, error) {
-                    // Handle any errors here
-                    console.error("Error: " + error);
-                    $('#responseDiv').html("An error occurred: " + error);
+        $(document).ready(function () {
+            $('#gptForm').on('submit', function (e) {
+                e.preventDefault();
+
+                // Clear previous error messages
+                $('.error').text('');
+
+                // Validation
+                let isValid = true;
+                if ($('#fileUpload').val() === '') {
+                    $('#fileError').text('Please upload a file.');
+                    isValid = false;
                 }
-            });   
+                if ($('#title').val().trim() === '') {
+                    $('#titleError').text('Please enter a title.');
+                    isValid = false;
+                }
+                if ($('#author').val().trim() === '') {
+                    $('#authorError').text('Please enter an author.');
+                    isValid = false;
+                }
+                if ($('#prompt').val().trim() === '') {
+                    $('#promptError').text('Please enter a prompt.');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    return; // Stop the function if validation fails
+                }
+
+                var formData = new FormData(this);
+                var fileInput = document.getElementById('fileUpload');
+                formData.append("file", fileInput.files[0]);
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/submit-form', // Your Flask endpoint
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        // Assuming the response is the text you want to display
+                        $('#responseDiv').html(response);
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle any errors here
+                        console.error("Error: " + error);
+                        $('#responseDiv').html("An error occurred: " + error);
+                    }
+                });
+            });
+
+            $('#style-changer-tab').click(function(e) {
+                e.preventDefault();
+                $('#style-changer').show();
+                $('#book-writer').hide();
+                $('#book-condenser').hide();
+                $(this).addClass('active');
+                $('#book-writer-tab').removeClass('active');
+                $('#book-condenser-tab').removeClass('active');
+            });
+
+            $('#book-writer-tab').click(function(e) {
+                e.preventDefault();
+                $('#style-changer').hide();
+                $('#book-writer').show();
+                $('#book-condenser').hide();
+                $(this).addClass('active');
+                $('#style-changer-tab').removeClass('active');
+                $('#book-condenser-tab').removeClass('active');
+            });
+
+            $('#book-condenser-tab').click(function(e) {
+                e.preventDefault();
+                $('#style-changer').hide();
+                $('#book-writer').hide();
+                $('#book-condenser').hide();
+                $(this).addClass('active');
+                $('#book-writer-tab').removeClass('active');
+                $('#style-changer-tab').removeClass('active');
+            });
         });
-    });
     </script>
 </body>
+
 </html>

@@ -10,6 +10,10 @@ body {
     text-align: left;
 }
 
+.error {
+    color: red;
+}
+
 h1 {
     color: #4CAF50; /* Green color for the heading */
 }
@@ -51,4 +55,31 @@ button {
 
 button:hover {
     background-color: #367c39; /* A darker shade of green for hover effect */
+}
+
+.nav-tabs {
+    margin-bottom: 10px;
+}
+
+.nav-tabs .nav-link {
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+
+.nav-tabs .nav-link:hover {
+    background-color: #367c39;
+    color: white;
+}
+
+/* To also change the background color for the active tab */
+.nav-tabs .nav-link.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.nav-tabs .nav-link:not(.active) {
+    background-color: #4CAF50;
+    color: white;
+    opacity: 0.5;
 }
