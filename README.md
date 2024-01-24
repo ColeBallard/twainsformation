@@ -2,7 +2,20 @@
 
 ## Description
 
-Transform a book or piece of literature into a different style using ChatGPT.
+Toolkit powered by ChatGPT for creating literature, modifying the style of a literary piece, and condensing a piece of literature.
+
+## Features
+
+- Create a long-form piece of literature based on comprehensive details
+  - Use an outline
+  - Use beginning, middle, and end
+  - Use a plot
+- Change the style of a long-form piece of literature
+  - Style change is applied to the entire piece
+- Condense a piece of literature
+  - Condense into a few paragraphs
+  - Condense into a few pages
+  - Condesne into 10-50 pages
 
 ## Design
 
