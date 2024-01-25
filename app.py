@@ -31,15 +31,60 @@ def index():
 def static_files(filename):
     return send_from_directory('.', filename)
 
-@app.route('/submit-form', methods=['POST'])
-def submit_form():
+@app.route('/style-changer', methods=['POST'])
+def submit_style_changer_form():
+    form_type = request.form.get('form_id')
+
+    print(form_type)
+
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    UPLOAD_FOLDER = '/path/to/save'
+    UPLOAD_FOLDER = '/uploaded_books'
+
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+    if file:
+        filename = secure_filename(file.filename)
+        save_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(save_path)
+
+        print('File uploaded successfully')
+
+        segmented_text = read_file(save_path)
+
+        total_length = len(segmented_text)
+
+        form = request.form
+        title = form.get('title')
+        author = form.get('author')
+        prompt = form.get('prompt')
+        chatgpt_model = form.get('chatgptModel')
+
+        transformed_book = [transform_text(title, author, prompt, chatgpt_model, segment, index, total_length) for index, segment in enumerate(segmented_text)]
+
+        # Save or process the transformed book
+        with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
+            file.write(' '.join(transformed_book))
+
+        return jsonify({'message': 'File uploaded successfully'}), 200
+    
+@app.route('/book-writer', methods=['POST'])
+def submit_book_writer_form():
+    form_type = request.form.get('form_id')
+
+    print(form_type)
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    UPLOAD_FOLDER = '/uploaded_books'
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
