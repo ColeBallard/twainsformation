@@ -47,7 +47,7 @@ git clone https://github.com/ColeBallard/twainsformation
 3. Install the dependencies.
 
 ```shell
-pip install Flask python-dotenv requests
+pip install -r requirements.txt
 ```
 
 4. [Create an OpenAI account and get an API Key.](https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt)
