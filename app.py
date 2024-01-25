@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
+import re
 import datetime
 import requests
 import tiktoken
@@ -22,6 +23,18 @@ load_dotenv()
 
 # Access the API key
 api_key = os.getenv('OPENAI_API_KEY')
+
+class OutlineNode:
+    def __init__(self, value, level):
+        self.value = value
+        self.level = level
+        self.children = []
+
+    def add_child(self, node):
+        self.children.append(node)
+
+    def is_endpoint(self):
+        return len(self.children) == 0
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -47,71 +60,64 @@ def submit_style_changer_form():
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-    if file:
-        filename = secure_filename(file.filename)
-        save_path = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(save_path)
+    if not file:
+        return 'No file selected'
+    
+    filename = secure_filename(file.filename)
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(save_path)
 
-        print('File uploaded successfully')
+    print('File uploaded successfully')
 
-        segmented_text = read_file(save_path)
+    segmented_text = read_file(save_path)
 
-        total_length = len(segmented_text)
+    total_length = len(segmented_text)
 
-        form = request.form
-        title = form.get('title')
-        author = form.get('author')
-        prompt = form.get('prompt')
-        chatgpt_model = form.get('chatgptModel')
+    form = request.form
+    title = form.get('title')
+    author = form.get('author')
+    prompt = form.get('prompt')
+    chatgpt_model = form.get('chatgptModel')
 
-        transformed_book = [transform_text(title, author, prompt, chatgpt_model, segment, index, total_length) for index, segment in enumerate(segmented_text)]
+    transformed_book = [transform_text(title, author, prompt, chatgpt_model, segment, index, total_length) for index, segment in enumerate(segmented_text)]
 
-        # Save or process the transformed book
-        with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-            file.write(' '.join(transformed_book))
+    # Save or process the transformed book
+    with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
+        file.write(' '.join(transformed_book))
 
-        return jsonify({'message': 'File uploaded successfully'}), 200
+    return jsonify({'message': 'File uploaded successfully'}), 200
     
 @app.route('/book-writer', methods=['POST'])
 def submit_book_writer_form():
-    form_type = request.form.get('form_id')
+    print(request.json)
 
-    print(form_type)
+    data = request.json['outline']
+    title = request.json['title']
 
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    UPLOAD_FOLDER = '/uploaded_books'
+    tree = parse_to_tree(data)
+    endpoints = concatenate_endpoints(tree)
 
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    if file:
-        filename = secure_filename(file.filename)
-        save_path = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(save_path)
+    total_length = len(endpoints)
 
-        print('File uploaded successfully')
+    chatgpt_model = 'gpt-3.5-turbo'
 
-        segmented_text = read_file(save_path)
+    endpoints = ['They are attacked by the dark sorcerer, Malcor, who has been following them']
 
-        total_length = len(segmented_text)
+    result_list = [write_text(title, endpoint, chatgpt_model, total_length) for endpoint in endpoints]
 
-        form = request.form
-        title = form.get('title')
-        author = form.get('author')
-        prompt = form.get('prompt')
-        chatgpt_model = form.get('chatgptModel')
+    final_text = '\n'.join(result_list)
 
-        transformed_book = [transform_text(title, author, prompt, chatgpt_model, segment, index, total_length) for index, segment in enumerate(segmented_text)]
+    split_list = final_text.split('\n')
 
-        # Save or process the transformed book
-        with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-            file.write(' '.join(transformed_book))
+    filtered_paragraphs = [p for p in split_list if re.match(r'^\d+\.', p)]
 
-        return jsonify({'message': 'File uploaded successfully'}), 200
+    print(filtered_paragraphs)
+
+    # Save or process the transformed book
+    with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
+        file.write(' '.join(endpoints))
+
+    return jsonify({'message': 'File uploaded successfully'}), 200
 
 def transform_text(title, author, prompt, chatgpt_model, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
@@ -130,6 +136,27 @@ def transform_text(title, author, prompt, chatgpt_model, segment, index, total_l
     try:
         response = requests.post(url, headers=headers, json=data)
         print(f'{index + 1}/{total_length}')
+        return response.json()['choices'][0]['message']['content']
+    except requests.RequestException as e:
+        raise SystemExit(e)
+
+def write_text(title, prompt, chatgpt_model, total_length):
+    instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this via a numbered list, filling in the gaps where necessary?'
+
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Authorization': 'Bearer ' + api_key,  # Added space after 'Bearer'
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'model': chatgpt_model,
+        'messages': [{'role': 'user', 'content': instruction}],
+        'temperature': 0.7
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        print(f'{1}/{total_length}')
         return response.json()['choices'][0]['message']['content']
     except requests.RequestException as e:
         raise SystemExit(e)
@@ -209,6 +236,31 @@ def decrypt_code(encrypted_code, passphrase):
     cipher_suite = Fernet(key)
     decrypted_code = cipher_suite.decrypt(encrypted_code).decode()
     return decrypted_code
+
+def parse_to_tree(data):
+    root = OutlineNode("", "0")  # Root node
+    last_nodes = {0: root}
+
+    for item in data:
+        current_level = len(item['level'].split('.'))
+        node = OutlineNode(item['value'], item['level'])
+        last_nodes[current_level - 1].add_child(node)
+        last_nodes[current_level] = node
+
+    return root
+
+def concatenate_endpoints(node, path_string=""):
+    if node.level != "0":  # Skip the root node
+        path_string += (node.value + "\n")
+    
+    if node.is_endpoint():
+        return [path_string.strip()]  # Return the concatenated string for this endpoint
+
+    concatenated = []
+    for child in node.children:
+        concatenated.extend(concatenate_endpoints(child, path_string))
+
+    return concatenated
 
 # Function to open the web page in a browser
 def open_browser():

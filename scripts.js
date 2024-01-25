@@ -85,20 +85,70 @@ $(document).ready(function () {
     $('#book-condenser').hide();
 
     $('#addInputBtn').click(function() {
-        let newInput = createDepthControlInput();
-        $('#inputContainer').append(newInput);
+        addInputField();
+        updateLevels();
+    });
+
+    $('#book-writer-form').on('submit', function (e) {
+        e.preventDefault();
+
+        // Clear previous error messages
+        $('.error').text('');
+
+        // Validation
+        let isValid = true;
+
+        if ($('#book-writer-title').val().trim() === '') {
+            $('#book-writer-title-Error').text('Please enter a title.');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            return; // Stop the function if validation fails
+        }
+
+        let formData = {'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim()};
+
+        console.log(formData);
+    
+        $.ajax({
+            type: "POST",
+            url: "/book-writer",
+            contentType: "application/json",
+            data: JSON.stringify(formData),
+            success: function(response) {
+                console.log("Data submitted successfully:", response);
+            },
+            error: function(xhr, status, error) {
+                console.error("Error in data submission:", xhr.responseText);
+            }
+        });
     });
 });
 
+function addInputField() {
+    let newInput = createDepthControlInput();
+    $('#inputContainer').append(newInput);
+}
+
 function createDepthControlInput() {
-    let inputGroup = $('<div>', { 'class': 'input-group mb-2' });
+    let inputGroup = $('<div>', { 
+        'class': 'input-group mb-2', 
+        'data-depth': '1',
+        css: { 'padding-left': '20px' }
+    });
+
+    let levelIndicator = $('<div>', {
+        'class': 'level-indicator',
+        css: { 'margin-right': '10px' }
+    });
 
     let indentBtn = $('<button>', {
         type: 'button',
         'class': 'btn btn-outline-secondary',
         text: '>',
         click: function() {
-            adjustDepth(inputGroup, 20);
+            adjustDepth(inputGroup, true);
         }
     });
 
@@ -107,8 +157,15 @@ function createDepthControlInput() {
         'class': 'btn btn-outline-secondary',
         text: '<',
         click: function() {
-            adjustDepth(inputGroup, -20);
+            adjustDepth(inputGroup, false);
         }
+    });
+
+    let deleteBtn = $('<button>', {
+        type: 'button',
+        'class': 'btn btn-outline-danger',
+        text: 'X',
+        click: function() { deleteInputField(inputGroup); } // Corrected event handler
     });
 
     let input = $('<input>', {
@@ -117,12 +174,59 @@ function createDepthControlInput() {
         placeholder: 'Enter detail'
     });
 
-    inputGroup.append(outdentBtn, indentBtn, input);
+    inputGroup.append(levelIndicator, outdentBtn, indentBtn, input, deleteBtn);
 
     return inputGroup;
 }
 
-function adjustDepth(element, adjustment) {
-    let currentPadding = parseInt(element.css('padding-left'), 10);
-    element.css('padding-left', `${Math.max(0, currentPadding + adjustment)}px`);
+function adjustDepth(element, isIndent) {
+    let currentDepth = parseInt(element.attr('data-depth'));
+    currentDepth += isIndent ? 1 : -1;
+    currentDepth = Math.max(1, currentDepth); // Ensure depth is not negative
+    element.attr('data-depth', currentDepth.toString());
+
+    // Adjust padding based on depth
+    let padding = (20 * currentDepth);
+    element.css('padding-left', `${padding}px`);
+
+    updateLevels();
 }
+
+function updateLevels() {
+    let levelNumbers = [0]; // Initialize level numbers
+
+    $('#inputContainer').children('.input-group').each(function() {
+        let depth = parseInt($(this).attr('data-depth'));
+
+        while (levelNumbers.length - 1 > depth) {
+            levelNumbers.pop(); // Remove deeper levels
+        }
+        if (levelNumbers.length - 1 < depth) {
+            levelNumbers.push(1); // Start a new sub-level
+        } else {
+            levelNumbers[depth]++; // Increment the current level
+        }
+
+        let levelString = levelNumbers.slice(1).join('.');
+        $(this).find('.level-indicator').text(levelString);
+    });
+}
+
+function deleteInputField(element) {
+    element.remove();
+    updateLevels();
+}
+
+function gatherFormData() {
+    let inputData = [];
+
+    $('#inputContainer').find('.input-group').each(function() {
+        let level = $(this).find('.level-indicator').text();
+        let value = $(this).find('input[type="text"]').val();
+
+        inputData.push({ value: value, level: level });
+    });
+
+    return inputData;
+}
+

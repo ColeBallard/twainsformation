@@ -87,3 +87,16 @@ button:hover {
     color: white;
     opacity: 0.5;
 }
+
+.level-indicator {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333; /* Dark text for contrast */
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-top: 10px;
+    margin-bottom: 2px;
+}
+
+#book-writer-title {
+    margin-bottom: 8px;
+}
