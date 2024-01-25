@@ -2,20 +2,24 @@
 
 ## Description
 
-Toolkit powered by ChatGPT for creating literature, modifying the style of a literary piece, and condensing a piece of literature.
+Toolkit powered by ChatGPT for creating, modifying the style of, and condensing a piece of literature.
 
 ## Features
+
+- Change the style of a long-form piece of literature
+  - Style change is applied to the entire piece
+
+## Future Features
 
 - Create a long-form piece of literature based on comprehensive details
   - Use an outline
   - Use beginning, middle, and end
   - Use a plot
-- Change the style of a long-form piece of literature
-  - Style change is applied to the entire piece
 - Condense a piece of literature
   - Condense into a few paragraphs
   - Condense into a few pages
-  - Condesne into 10-50 pages
+  - Condense into 10-50 pages
+- Export to pdf
 
 ## Design
 
@@ -66,6 +70,6 @@ python app.py
 
 9. Upload the text file, choose a prompt, and wait for ChatGPT to transform the piece of literature.
 
-10. Download the pdf. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
+10. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
 
 ## **[Contact](https://coleb.io/contact)**
