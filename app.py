@@ -1,6 +1,4 @@
 import webbrowser
-import threading
-import tkinter as tk
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -9,12 +7,6 @@ import re
 import datetime
 import requests
 import tiktoken
-
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.fernet import Fernet
-import base64
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -210,32 +202,6 @@ def num_tokens_from_string(string, encoding_name):
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
-# Function to generate a key from a passphrase
-def generate_key_from_passphrase(passphrase):
-    salt = b'\x1a\xa9\x9e\x9f\x1f\x9f\x9b\xab\x1d\xde\xdf\xef\xff\xfe\xfd\xfc'  # Use a fixed salt
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-        backend=default_backend()
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
-    return key
-
-# Encrypting the code
-def encrypt_code(code, passphrase):
-    key = generate_key_from_passphrase(passphrase)
-    cipher_suite = Fernet(key)
-    encrypted_code = cipher_suite.encrypt(code.encode())
-    return encrypted_code
-
-# Decrypting the code
-def decrypt_code(encrypted_code, passphrase):
-    key = generate_key_from_passphrase(passphrase)
-    cipher_suite = Fernet(key)
-    decrypted_code = cipher_suite.decrypt(encrypted_code).decode()
-    return decrypted_code
 
 def parse_to_tree(data):
     root = OutlineNode("", "0")  # Root node
@@ -262,65 +228,6 @@ def concatenate_endpoints(node, path_string=""):
 
     return concatenated
 
-# Function to open the web page in a browser
-def open_browser():
-    webbrowser.open_new('http://127.0.0.1:5000/')
-
-def run_gui():
-    root = tk.Tk()
-    root.title("Status Window")
-    
-    # Example label
-    label = tk.Label(root, text="Status Messages Here")
-    label.pack()
-
-    # Function to handle API Key management
-    def manage_api_keys():
-        api_key_window = tk.Toplevel(root)
-        api_key_window.title("API Key Management")
-        
-        # Example label in API Key window
-        label = tk.Label(api_key_window, text="Enter and store your API Keys here")
-        label.pack()
-
-        # Example of API Key input
-        api_key_input = tk.Entry(api_key_window)
-        api_key_input.pack()
-
-        # Save button (Implement saving logic as needed)
-        save_button = tk.Button(api_key_window, text="Save", command=lambda: save_api_key(api_key_input.get()))
-        save_button.pack()
-
-    # Example function to save API Key (Implement actual saving logic)
-    def save_api_key(api_key):
-        print("API Key saved:", api_key)  # Replace with actual save logic
-
-    # Creating a menu bar
-    menubar = tk.Menu(root)
-
-    # Creating a 'File' menu
-    file_menu = tk.Menu(menubar, tearoff=0)
-    file_menu.add_command(label="API Keys", command=manage_api_keys)
-    file_menu.add_separator()
-    file_menu.add_command(label="Exit", command=root.quit)
-    menubar.add_cascade(label="File", menu=file_menu)
-
-    # Adding the menu bar to the window
-    root.config(menu=menubar)
-
-    # Run the Tkinter event loop
-    root.mainloop()
-
-# Running Flask in a separate thread
-def run_flask():
-    app.run()
-
 if __name__ == '__main__':
-    # Start Flask in a new thread
-    threading.Thread(target=run_flask, daemon=True).start()
-
-    # Open the browser
-    open_browser()
-
-    # Run the GUI
-    run_gui()
+    webbrowser.open_new('http://127.0.0.1:5000/')
+    app.run()
