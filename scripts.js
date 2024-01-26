@@ -1,4 +1,68 @@
 $(document).ready(function () {
+    loadUserData();
+
+    $('#save-api-key-btn').click(function(e) {
+        e.preventDefault();
+        
+        testOpenAIKey().then(result => console.log(result));
+
+        saveUserData();
+    });
+
+    $('#style-changer-tab').click(function(e) {
+        e.preventDefault();
+        $('#style-changer').show();
+        $('#book-writer').hide();
+        $('#book-condenser').hide();
+        $('#api-key').hide();
+        $(this).addClass('active');
+        $('#book-writer-tab').removeClass('active');
+        $('#book-condenser-tab').removeClass('active');
+    });
+
+    $('#book-writer-tab').click(function(e) {
+        e.preventDefault();
+        $('#style-changer').hide();
+        $('#book-writer').show();
+        $('#book-condenser').hide();
+        $('#api-key').hide();
+        $(this).addClass('active');
+        $('#style-changer-tab').removeClass('active');
+        $('#book-condenser-tab').removeClass('active');
+    });
+
+    $('#book-condenser-tab').click(function(e) {
+        e.preventDefault();
+        $('#style-changer').hide();
+        $('#book-writer').hide();
+        $('#book-condenser').show();
+        $('#api-key').hide();
+        $(this).addClass('active');
+        $('#book-writer-tab').removeClass('active');
+        $('#style-changer-tab').removeClass('active');
+    });
+
+    $('#api-key-btn').click(function(e) {
+        e.preventDefault();
+        $('#style-changer').hide();
+        $('#book-writer').hide();
+        $('#book-condenser').hide();
+        $('#api-key').show();
+        $('#book-writer-tab').removeClass('active');
+        $('#style-changer-tab').removeClass('active');
+        $('#book-condenser-tab').removeClass('active');
+    });
+
+    $('#style-changer').hide();
+    $('#book-writer').hide();
+    $('#book-condenser').hide();
+    $('#api-key').show();
+
+    $('#addInputBtn').click(function() {
+        addInputField();
+        updateLevels();
+    });
+
     $('#style-changer-form').on('submit', function (e) {
         e.preventDefault();
 
@@ -31,6 +95,7 @@ $(document).ready(function () {
         var formData = new FormData(this);
         var fileInput = document.getElementById('fileUpload');
         formData.append("file", fileInput.files[0]);
+        formData.append("api_key", $("#api-key-input").val());
 
         $.ajax({
             type: 'POST',
@@ -48,45 +113,6 @@ $(document).ready(function () {
                 $('#style-changer-response').html("An error occurred: " + error);
             }
         });
-    });
-
-    $('#style-changer-tab').click(function(e) {
-        e.preventDefault();
-        $('#style-changer').show();
-        $('#book-writer').hide();
-        $('#book-condenser').hide();
-        $(this).addClass('active');
-        $('#book-writer-tab').removeClass('active');
-        $('#book-condenser-tab').removeClass('active');
-    });
-
-    $('#book-writer-tab').click(function(e) {
-        e.preventDefault();
-        $('#style-changer').hide();
-        $('#book-writer').show();
-        $('#book-condenser').hide();
-        $(this).addClass('active');
-        $('#style-changer-tab').removeClass('active');
-        $('#book-condenser-tab').removeClass('active');
-    });
-
-    $('#book-condenser-tab').click(function(e) {
-        e.preventDefault();
-        $('#style-changer').hide();
-        $('#book-writer').hide();
-        $('#book-condenser').hide();
-        $(this).addClass('active');
-        $('#book-writer-tab').removeClass('active');
-        $('#style-changer-tab').removeClass('active');
-    });
-
-    $('#style-changer').hide();
-    $('#book-writer').hide();
-    $('#book-condenser').hide();
-
-    $('#addInputBtn').click(function() {
-        addInputField();
-        updateLevels();
     });
 
     $('#book-writer-form').on('submit', function (e) {
@@ -107,9 +133,7 @@ $(document).ready(function () {
             return; // Stop the function if validation fails
         }
 
-        let formData = {'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim()};
-
-        console.log(formData);
+        let formData = {'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim(), "api_key": $("#api-key-input").val()};
     
         $.ajax({
             type: "POST",
@@ -230,3 +254,61 @@ function gatherFormData() {
     return inputData;
 }
 
+function setLocalStorageItem(value) {
+    localStorage.setItem('key54-32579032', value);
+}
+
+function getLocalStorageItem() {
+    return localStorage.getItem('key54-32579032');
+}
+
+function saveUserData() {
+    var userInput = $("#api-key-input").val();
+    setLocalStorageItem(userInput);
+}
+
+function loadUserData() {
+    var userData = getLocalStorageItem();
+    console.log(userData);
+    if (userData) {
+        $("#api-key-input").val(userData);
+    }
+}
+
+async function testOpenAIKey() {
+    var apiKey = $("#api-key-input").val();
+
+    const url = 'https://api.openai.com/v1/chat/completions'; // Example endpoint
+
+    const headers = {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+    };
+
+    const body = JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+            {
+                role: "system",
+                content: "You are a helpful assistant."
+            },
+            {
+                role: "user",
+                content: "Hello!"
+            }
+        ]
+    });
+
+    try {
+        const response = await fetch(url, { method: 'POST', headers: headers, body: body });
+        const data = await response.json();
+
+        if (response.ok) {
+            return { valid: true, message: 'API key is valid.', data: data };
+        } else {
+            return { valid: false, message: 'API key is not valid.', error: data };
+        }
+    } catch (error) {
+        return { valid: false, message: 'Failed to test API key.', error: error };
+    }
+}

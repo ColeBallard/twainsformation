@@ -56,9 +56,19 @@ button {
     color: white;
 }
 
+.submit-button:hover {
+    background-color: lightgray;
+    color: black;
+}
 
-button:hover {
-    background-color: #367c39; /* A darker shade of green for hover effect */
+.other-button {
+    background-color: lightgray;
+    color: black;
+}
+
+.other-button:hover {
+    background-color: #4CAF50; /* Button color matching the heading */
+    color: white;
 }
 
 .nav-tabs {
@@ -99,4 +109,8 @@ button:hover {
 
 #book-writer-title {
     margin-bottom: 8px;
+}
+
+#api-key-note {
+    margin-top: 8px;;
 }

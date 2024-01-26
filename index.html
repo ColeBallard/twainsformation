@@ -17,7 +17,14 @@
 
 <body>
     <div class="container">
-        <h1>twainsformation</h1>
+        <div class="row align-items-center">
+            <div class="col">
+                <h1>twainsformation</h1>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" id="api-key-btn">API Key</button>
+            </div>
+        </div>
         <ul class="nav nav-tabs">
             <li class="nav-item">
                 <a class="nav-link" href="#" id="style-changer-tab">Style Changer</a>
@@ -67,12 +74,18 @@
                 <div id="inputContainer">
                     <!-- Dynamic input fields will be added here -->
                 </div>
-                <button type="button" id="addInputBtn">Add Input</button>
+                <button type="button" class="other-button" id="addInputBtn">Add Input</button>
                 <button type="submit" class="submit-button">Submit</button>
             </form>
         </div>
         <div id="book-condenser">
             
+        </div>
+        <div id="api-key">
+            <span class="inputLabel">API Key: </span><input type="password" id="api-key-input" name="api-key-input">
+            <div class="error" id="book-writer-title-Error"></div>
+            <button type="button" class="other-button" id="save-api-key-btn">Save to Local Storage</button>
+            <div id="api-key-note"><b>Note:</b> This feature is optional and will use your browsers data storage system to remember your API Key. Saving to local storage will allow you to not need to input your API key every time, but is not required. We <b>DO NOT</b> store or save your key anywhere besides your own browser.</div>
         </div>
     </div>
 

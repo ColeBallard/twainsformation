@@ -10,12 +10,6 @@ import tiktoken
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
-# Load the environment variables from .env file
-load_dotenv()
-
-# Access the API key
-api_key = os.getenv('OPENAI_API_KEY')
-
 class OutlineNode:
     def __init__(self, value, level):
         self.value = value
@@ -70,8 +64,9 @@ def submit_style_changer_form():
     author = form.get('author')
     prompt = form.get('prompt')
     chatgpt_model = form.get('chatgptModel')
+    api_key = form.get('api_key')
 
-    transformed_book = [transform_text(title, author, prompt, chatgpt_model, segment, index, total_length) for index, segment in enumerate(segmented_text)]
+    transformed_book = [transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length) for index, segment in enumerate(segmented_text)]
 
     # Save or process the transformed book
     with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
@@ -85,6 +80,7 @@ def submit_book_writer_form():
 
     data = request.json['outline']
     title = request.json['title']
+    api_key = request.json['api_key']
 
     tree = parse_to_tree(data)
     endpoints = concatenate_endpoints(tree)
@@ -95,7 +91,7 @@ def submit_book_writer_form():
 
     endpoints = ['They are attacked by the dark sorcerer, Malcor, who has been following them']
 
-    result_list = [write_text(title, endpoint, chatgpt_model, total_length) for endpoint in endpoints]
+    result_list = [write_text(title, endpoint, chatgpt_model, api_key, total_length) for endpoint in endpoints]
 
     final_text = '\n'.join(result_list)
 
@@ -111,7 +107,7 @@ def submit_book_writer_form():
 
     return jsonify({'message': 'File uploaded successfully'}), 200
 
-def transform_text(title, author, prompt, chatgpt_model, segment, index, total_length):
+def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
 
     url = 'https://api.openai.com/v1/chat/completions'
@@ -132,7 +128,7 @@ def transform_text(title, author, prompt, chatgpt_model, segment, index, total_l
     except requests.RequestException as e:
         raise SystemExit(e)
 
-def write_text(title, prompt, chatgpt_model, total_length):
+def write_text(title, prompt, chatgpt_model, api_key, total_length):
     instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this via a numbered list, filling in the gaps where necessary?'
 
     url = 'https://api.openai.com/v1/chat/completions'
