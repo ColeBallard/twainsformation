@@ -1,7 +1,6 @@
 import webbrowser
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
 import os
 import re
 import datetime

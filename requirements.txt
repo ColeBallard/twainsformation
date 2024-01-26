@@ -1,6 +1,5 @@
 Flask
 Werkzeug
-python-dotenv
 requests
 tiktoken
 cryptography
