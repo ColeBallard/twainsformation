@@ -21,6 +21,8 @@ class OutlineNode:
     def is_endpoint(self):
         return len(self.children) == 0
 
+# ROUTES
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     return send_from_directory('.', 'index.html')
@@ -149,15 +151,10 @@ def write_text(title, prompt, chatgpt_model, api_key, total_length):
         raise SystemExit(e)
 
 def read_file(file_path):
-    encoding = tiktoken.get_encoding('cl100k_base')
-    encoding = tiktoken.encoding_for_model('gpt-4')
-
     combined_content = ''  # Initialize an empty string to accumulate the lines
     with open(file_path, 'r') as file:
         for line in file:
             combined_content += line.strip()  # Append each line to the combined_content string
-    # print(combined_content)  # Print the combined content after reading all lines
-    # print(num_tokens_from_string(combined_content, 'cl100k_base'))
 
     segmented_text = segment_text(combined_content, 4096)
 
@@ -224,5 +221,5 @@ def concatenate_endpoints(node, path_string=""):
     return concatenated
 
 if __name__ == '__main__':
-    webbrowser.open_new('http://127.0.0.1:5000/')
-    app.run()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
