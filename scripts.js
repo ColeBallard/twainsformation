@@ -92,10 +92,14 @@ $(document).ready(function () {
             return; // Stop the function if validation fails
         }
 
+        prefix = 'style-changer'
+
+        $('#' + prefix + '-loading-bar-container').hide();
+
         // Show the loading bar
-        $('#loading-bar-container').show();
-        $('#loading-bar').css('width', '0%');
-        $('#loading-percent').text('0%'); // Reset the text
+        $('#' + prefix + '-loading-bar-container').show();
+        $('#' + prefix + '-loading-bar').css('width', '0%');
+        $('#' + prefix + '-loading-percent').text('0%'); // Reset the text
 
         var title = $('#title').val().trim();
 
@@ -116,7 +120,7 @@ $(document).ready(function () {
                     if (evt.lengthComputable) {
                         var percentComplete = evt.loaded / evt.total;
                         // Update loading bar width
-                        $('#loading-bar').css('width', percentComplete * 100 + '%');
+                        $('#' + prefix + '-loading-bar').css('width', percentComplete * 100 + '%');
                     }
                 }, false);
                 return xhr;
@@ -131,7 +135,7 @@ $(document).ready(function () {
             },
             complete: function () {
                 // Hide the loading bar when the request is complete
-                updateLoadingBar(title);
+                updateLoadingBar(title, prefix);
             }
         });
     });
@@ -335,20 +339,20 @@ async function testOpenAIKey() {
 }
 
 // Function to periodically fetch progress and update the loading bar
-function updateLoadingBar(title) {
+function updateLoadingBar(title, prefix) {
     $.get('/progress', function (data) {
         if (data.current && data.total) {
             var progress = (data.current / data.total) * 100;
-            $('#loading-bar').css('width', progress + '%');
-            $('#loading-percent').text(Math.round(progress) + '%'); // Update the text
+            $('#' + prefix + '-loading-bar').css('width', progress + '%');
+            $('#' + prefix + '-loading-percent').text(Math.round(progress) + '%'); // Update the text
         }
 
         if (!data.current || data.current < data.total) {
-            setTimeout(() => updateLoadingBar(title), 1000); // Update every second
+            setTimeout(() => updateLoadingBar(title, prefix), 1000); // Update every second
         } else {
             showPDF(data.text, title);
             // Hide the loading bar when processing is complete
-            $('#loading-bar-container').hide();
+            $('#' + prefix + '-loading-bar-container').hide();
         }
     });
 }

@@ -65,12 +65,6 @@ def submit_style_changer_form():
     # Start the processing in a separate thread
     threading.Thread(target=process_file, args=(filename, title, author, prompt, chatgpt_model, api_key, total_length)).start()
 
-    # transformed_book = [transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length) for index, segment in enumerate(segmented_text)]
-
-    # Save or process the transformed book
-    # with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-    #     file.write(' '.join(transformed_book))
-
     return jsonify({'message': 'File uploaded successfully'}), 200
     
 @app.route('/book-writer', methods=['POST'])
@@ -100,7 +94,10 @@ def submit_book_writer_form():
 
     print(filtered_paragraphs)
 
-    final_text = [write_text(title, filtered_paragraph, chatgpt_model, api_key, total_length, 'outline description') for filtered_paragraph in filtered_paragraphs]
+    # Start the processing in a separate thread
+    threading.Thread(target=write_text, args=(title, filtered_paragraphs, chatgpt_model, api_key, total_length, 'outline description')).start()
+
+    final_text = [write_text for filtered_paragraph in filtered_paragraphs]
 
     # Save or process the transformed book
     with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
@@ -173,8 +170,6 @@ def create_pdf(text, title):
     # Save the PDF file
     pdf.output(pdf_full_path)
 
-    # Return the relative path from the static folder
-    # relative_path = os.path.join('transformed_books', f"{safe_title}.pdf").replace('\\', '/')
     return pdf_full_path
 
 def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_length):
@@ -190,10 +185,6 @@ def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_
         progress_data['current'] = index + 1
         progress_data['total'] = total_length
         progress_data['text'] = ' '.join(transformed_book)
-    
-    # # Save the transformed book
-    # with open(os.path.join('/transformed_books', f'{title}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt'), 'w') as file:
-    #     file.write(' '.join(transformed_book))
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'

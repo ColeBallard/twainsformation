@@ -115,13 +115,13 @@ button {
     margin-top: 8px;;
 }
 
-#loading-bar-container {
+.loading-bar-container {
     display: none;
     position: relative;
     background-color: #ddd;
 }
 
-#loading-bar {
+.loading-bar {
     width: 0%;
     height: 20px;
     background-color: #4CAF50;
@@ -130,7 +130,7 @@ button {
     color: white;
 }
 
-#loading-percent {
+.loading-percent {
     position: absolute;
     width: 100%;
     text-align: center;
