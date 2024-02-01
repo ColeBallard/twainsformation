@@ -122,7 +122,7 @@ $(document).ready(function () {
                 return xhr;
             },
             success: function (response) {
-                
+                console.log("Data submitted successfully:", response);
             },
             error: function (xhr, status, error) {
                 // Handle any errors here
@@ -131,9 +131,7 @@ $(document).ready(function () {
             },
             complete: function () {
                 // Hide the loading bar when the request is complete
-                updateLoadingBar();
-                // Assuming the response is the text you want to display
-                showPDF('', title);
+                updateLoadingBar(title);
             }
         });
     });
@@ -292,7 +290,7 @@ function saveUserData() {
 
 function loadUserData() {
     var userData = getLocalStorageItem();
-    console.log(userData);
+
     if (userData) {
         $("#api-key-input").val(userData);
     }
@@ -337,7 +335,7 @@ async function testOpenAIKey() {
 }
 
 // Function to periodically fetch progress and update the loading bar
-function updateLoadingBar() {
+function updateLoadingBar(title) {
     $.get('/progress', function (data) {
         if (data.current && data.total) {
             var progress = (data.current / data.total) * 100;
@@ -346,8 +344,9 @@ function updateLoadingBar() {
         }
 
         if (!data.current || data.current < data.total) {
-            setTimeout(updateLoadingBar, 1000); // Update every second
+            setTimeout(() => updateLoadingBar(title), 1000); // Update every second
         } else {
+            showPDF(data.text, title);
             // Hide the loading bar when processing is complete
             $('#loading-bar-container').hide();
         }
@@ -364,8 +363,6 @@ function showPDF(text, title) {
         dataType: 'json',
         success: function(response) {
             response.pdf_url = '/static' + response.pdf_url;
-
-            console.log(response.pdf_url);
 
             if (response.pdf_url) {
                 $('#pdf-viewer').attr('src', response.pdf_url);

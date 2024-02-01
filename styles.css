@@ -136,3 +136,7 @@ button {
     text-align: center;
     line-height: 20px;
 }
+
+#pdf-viewer-container {
+    margin-bottom: 32px;
+}

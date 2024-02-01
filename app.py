@@ -116,6 +116,7 @@ def progress():
 @app.route('/create-pdf', methods=['POST'])
 def pdf_route():
     data = request.json
+    print(data)
     relative_pdf_path = create_pdf(data['text'], data['title'])
     
     # Generate the URL for the PDF
@@ -126,18 +127,33 @@ def pdf_route():
 
 def create_pdf(text, title):
     pdf = FPDF()
+    pdf.set_margins(20, 20, 20)  # Set larger margins (20mm on each side)
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
 
-    # Add title page
+    # Set font for the title to Times New Roman, bold, size 24
+    pdf.set_font("Times", 'B', 24)
+    pdf_w = 210 - 40  # Adjust width for the new margins
+    title_w = pdf.get_string_width(title) + 6
+    title_x = (pdf_w - title_w) / 2 + 20  # Adjust for left margin
+    title_y = (297 - 10) / 4  # Place title roughly in the upper third
+    
+    pdf.set_xy(title_x, title_y)
+    pdf.cell(title_w, 10, title, 0, 1, 'C')
+    
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt=title, ln=True, align='C')
-
-    # Add content
-    pdf.set_font("Arial", size=12)
-    for line in text.split('\n'):
-        pdf.cell(0, 10, txt=line, ln=True)
+    pdf.set_font("Times", size=12)
+    
+    # Process each paragraph for indentation and reduced line spacing
+    indent = 10  # Indentation for paragraphs in mm
+    line_height = 6  # Adjust line height for tighter spacing
+    paragraphs = text.split('\n')
+    
+    for paragraph in paragraphs:
+        if paragraph.strip():  # Check if paragraph is not just whitespace
+            pdf.set_x(pdf.l_margin + indent)  # Apply indentation
+            pdf.multi_cell(0, line_height, paragraph)
+        else:
+            pdf.ln(2)  # Add a blank line for paragraph spacing
 
     # Define the directory where you want to save the PDF
     pdf_directory = os.path.join(app.root_path, 'static', 'transformed_books')
@@ -169,13 +185,11 @@ def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_
         # Update progress
         progress_data['current'] = index + 1
         progress_data['total'] = total_length
+        progress_data['text'] = ' '.join(transformed_book)
     
     # # Save the transformed book
     # with open(os.path.join('/transformed_books', f'{title}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt'), 'w') as file:
     #     file.write(' '.join(transformed_book))
-
-    # Clear or update the progress data when done
-    progress_data.clear()
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
