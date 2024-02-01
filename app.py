@@ -195,14 +195,15 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
 
     total_length = len(filtered_paragraphs)
 
+    final_transformed_paragraphs = []
     for index, paragraph in enumerate(filtered_paragraphs):
         transformed_paragraph = write_text(title, paragraph, chatgpt_model, api_key, total_length, 'outline description')
-        transformed_paragraphs.append(transformed_paragraph)
+        final_transformed_paragraphs.append(transformed_paragraph)
         
         # Update progress
         progress_data['current'] = index + 1
         progress_data['total'] = total_length
-        progress_data['text'] = ''.join(transformed_paragraphs)
+        progress_data['text'] = ''.join(final_transformed_paragraphs)
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
