@@ -8,11 +8,12 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
 
 - Change the style of a long-form piece of literature
   - Style change is applied to the entire piece
+- Create a long-form piece of literature based on comprehensive details
+  - Use an outline
 
 ## Future Features
 
 - Create a long-form piece of literature based on comprehensive details
-  - Use an outline
   - Use beginning, middle, and end
   - Use a plot
 - Condense a piece of literature
