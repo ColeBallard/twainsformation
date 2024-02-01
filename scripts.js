@@ -355,26 +355,41 @@ function updateLoadingBar(title) {
 
 // JavaScript Part
 function showPDF(text, title) {
-    $.ajax({
-        type: 'POST',
-        url: '/create-pdf',
-        data: JSON.stringify({text: text, title: title}),
-        contentType: "application/json",
-        dataType: 'json',
-        success: function(response) {
-            response.pdf_url = '/static' + response.pdf_url;
+    // Prepare the data to be sent in the request
+    const data = JSON.stringify({text: text, title: title});
 
-            if (response.pdf_url) {
-                $('#pdf-viewer').attr('src', response.pdf_url);
-                $('#pdf-viewer-container').show();
-            } else {
-                console.error("Error: PDF not found");
-                // Handle the error, maybe display a message to the user
-            }
+    // Use the fetch API to send the POST request
+    fetch('/create-pdf', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         },
-        error: function() {
-            console.error("Error creating PDF");
-            // Handle the error appropriately
+        body: data
+    })
+    .then(response => {
+        // Check if the response is ok (status in the range 200-299)
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        // Retrieve the filename from the Content-Disposition header
+        // This is optional, but useful if you want to use the original filename
+        const filename = response.headers.get('Content-Disposition').split('filename=')[1].replaceAll('"', '');
+        return response.blob().then(blob => ({blob, filename}));
+    })
+    .then(({ blob, filename }) => {
+        // Create a URL for the blob object
+        const url = window.URL.createObjectURL(blob);
+        // Create an anchor (<a>) element with the URL as the href
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'download.pdf'; // Use the filename from the header or a default
+        document.body.appendChild(a); // Append the anchor to the body
+        a.click(); // Simulate a click on the anchor to trigger the download
+        window.URL.revokeObjectURL(url); // Clean up by revoking the blob URL
+        a.remove(); // Remove the anchor from the body
+    })
+    .catch(error => {
+        console.error('Error creating PDF:', error);
+        // Handle any errors that occurred during the fetch
     });
 }

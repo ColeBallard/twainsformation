@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, url_for
+from flask import Flask, request, jsonify, send_from_directory, url_for, send_file
 from werkzeug.utils import secure_filename
 from fpdf import FPDF
 import os
@@ -38,7 +38,7 @@ def submit_style_changer_form():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    UPLOAD_FOLDER = '/uploaded_books'
+    UPLOAD_FOLDER = '/tmp/uploaded_books'
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
@@ -117,13 +117,10 @@ def progress():
 def pdf_route():
     data = request.json
     print(data)
-    relative_pdf_path = create_pdf(data['text'], data['title'])
-    
-    # Generate the URL for the PDF
-    pdf_url = url_for('static', filename=relative_pdf_path)
-    print(pdf_url)  # For debugging
+    pdf_full_path = create_pdf(data['text'], data['title'])
 
-    return jsonify({'pdf_url': pdf_url})
+    # Send the PDF file directly to the client for download
+    return send_file(pdf_full_path, as_attachment=True)
 
 def create_pdf(text, title):
     pdf = FPDF()
@@ -145,7 +142,7 @@ def create_pdf(text, title):
     
     # Process each paragraph for indentation and reduced line spacing
     indent = 10  # Indentation for paragraphs in mm
-    line_height = 6  # Adjust line height for tighter spacing
+    line_height = 8  # Adjust line height for tighter spacing
     paragraphs = text.split('\n')
     
     for paragraph in paragraphs:
@@ -153,25 +150,32 @@ def create_pdf(text, title):
             pdf.set_x(pdf.l_margin + indent)  # Apply indentation
             pdf.multi_cell(0, line_height, paragraph)
         else:
-            pdf.ln(2)  # Add a blank line for paragraph spacing
+            pdf.ln(6)  # Add a blank line for paragraph spacing
 
-    # Define the directory where you want to save the PDF
-    pdf_directory = os.path.join(app.root_path, 'static', 'transformed_books')
+    # Define a temporary directory within /tmp for PDFs
+    pdf_directory = '/tmp/transformed_books'  # Adjusted to /tmp for compatibility
     
     # Check if the directory exists, and create it if it doesn't
     if not os.path.exists(pdf_directory):
         os.makedirs(pdf_directory)
 
-    # Sanitize and format the filename
+    # Secure the title and replace spaces with underscores
     safe_title = secure_filename(title).replace(' ', '_')
-    pdf_full_path = os.path.join(pdf_directory, f"{safe_title}.pdf")
+
+    # Generate a timestamp string
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+    # Append the timestamp to the safe_title
+    safe_title = f"{safe_title}{timestamp}.pdf"
+
+    pdf_full_path = os.path.join(pdf_directory, safe_title)
 
     # Save the PDF file
     pdf.output(pdf_full_path)
 
     # Return the relative path from the static folder
-    relative_path = os.path.join('transformed_books', f"{safe_title}.pdf").replace('\\', '/')
-    return relative_path
+    # relative_path = os.path.join('transformed_books', f"{safe_title}.pdf").replace('\\', '/')
+    return pdf_full_path
 
 def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_length):
     # Assuming read_file and transform_text are defined elsewhere
