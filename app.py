@@ -78,30 +78,10 @@ def submit_book_writer_form():
     tree = parse_to_tree(data)
     endpoints = concatenate_endpoints(tree)
 
-    total_length = len(endpoints)
-
     chatgpt_model = 'gpt-3.5-turbo'
 
-    endpoints = ['They are attacked by the dark sorcerer, Malcor, who has been following them']
-
-    outline_descriptions = [write_text(title, endpoint, chatgpt_model, api_key, total_length, 'outline') for endpoint in endpoints]
-
-    outline_descriptions_list = '\n'.join(outline_descriptions)
-
-    split_list = outline_descriptions_list.split('\n')
-
-    filtered_paragraphs = [p for p in split_list if re.match(r'^\d+\.', p)]
-
-    print(filtered_paragraphs)
-
     # Start the processing in a separate thread
-    threading.Thread(target=write_text, args=(title, filtered_paragraphs, chatgpt_model, api_key, total_length, 'outline description')).start()
-
-    final_text = [write_text for filtered_paragraph in filtered_paragraphs]
-
-    # Save or process the transformed book
-    with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-        file.write(' '.join(final_text))
+    threading.Thread(target=process_outline, args=(title, endpoints, chatgpt_model, api_key)).start()
 
     return jsonify({'message': 'File uploaded successfully'}), 200
 
@@ -121,6 +101,9 @@ def pdf_route():
 
 def create_pdf(text, title):
     pdf = FPDF()
+
+    text = sanitize_text(text)
+
     pdf.set_margins(20, 20, 20)  # Set larger margins (20mm on each side)
     pdf.add_page()
 
@@ -172,6 +155,10 @@ def create_pdf(text, title):
 
     return pdf_full_path
 
+def sanitize_text(text):
+    # Replace specific non-Latin-1 characters with their Latin-1 equivalents or remove them
+    return text.replace('\u2013', '-').replace('\u2014', '--').replace('\u2018', "'").replace('\u2019', "'").replace('\u2026', '...')  # Add more replacements as needed
+
 def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_length):
     # Assuming read_file and transform_text are defined elsewhere
     segmented_text = read_file(os.path.join('/tmp/uploaded_books', filename))
@@ -185,6 +172,37 @@ def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_
         progress_data['current'] = index + 1
         progress_data['total'] = total_length
         progress_data['text'] = ' '.join(transformed_book)
+
+def process_outline(title, paragraphs, chatgpt_model, api_key):
+    total_length = len(paragraphs)
+
+    transformed_paragraphs = []
+    for index, paragraph in enumerate(paragraphs):
+        transformed_paragraph = write_text(title, paragraph, chatgpt_model, api_key, total_length, 'outline')
+        transformed_paragraphs.append(transformed_paragraph)
+        
+        # Update progress
+        progress_data['current'] = total_length - 1 if index + 1 == total_length else index + 1
+        progress_data['total'] = total_length
+
+    outline_descriptions_list = '\n'.join(transformed_paragraphs)
+
+    print(outline_descriptions_list)
+
+    split_list = outline_descriptions_list.split('\n')
+
+    filtered_paragraphs = [p for p in split_list if re.match(r'^\d+\.', p)]
+
+    total_length = len(filtered_paragraphs)
+
+    for index, paragraph in enumerate(filtered_paragraphs):
+        transformed_paragraph = write_text(title, paragraph, chatgpt_model, api_key, total_length, 'outline description')
+        transformed_paragraphs.append(transformed_paragraph)
+        
+        # Update progress
+        progress_data['current'] = index + 1
+        progress_data['total'] = total_length
+        progress_data['text'] = ''.join(transformed_paragraphs)
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
@@ -209,9 +227,11 @@ def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index
 
 def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_description):
     if outline_or_description == 'outline':
-        instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this via a numbered list, filling in the gaps where necessary?'
+        instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
     elif outline_or_description == 'outline description':
-        instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this descrption, filling in the gaps where necessary?'
+        instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this description, filling in the gaps where necessary?'
+
+    print(instruction)
 
     url = 'https://api.openai.com/v1/chat/completions'
     headers = {

@@ -94,8 +94,6 @@ $(document).ready(function () {
 
         prefix = 'style-changer'
 
-        $('#' + prefix + '-loading-bar-container').hide();
-
         // Show the loading bar
         $('#' + prefix + '-loading-bar-container').show();
         $('#' + prefix + '-loading-bar').css('width', '0%');
@@ -158,6 +156,13 @@ $(document).ready(function () {
             return; // Stop the function if validation fails
         }
 
+        prefix = 'book-writer'
+
+        // Show the loading bar
+        $('#' + prefix + '-loading-bar-container').show();
+        $('#' + prefix + '-loading-bar').css('width', '0%');
+        $('#' + prefix + '-loading-percent').text('0%'); // Reset the text
+
         let formData = { 'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim(), "api_key": $("#api-key-input").val() };
 
         $.ajax({
@@ -165,11 +170,26 @@ $(document).ready(function () {
             url: "/book-writer",
             contentType: "application/json",
             data: JSON.stringify(formData),
+            xhr: function () {
+                var xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = evt.loaded / evt.total;
+                        // Update loading bar width
+                        $('#' + prefix + '-loading-bar').css('width', percentComplete * 100 + '%');
+                    }
+                }, false);
+                return xhr;
+            },
             success: function (response) {
                 console.log("Data submitted successfully:", response);
             },
             error: function (xhr, status, error) {
                 console.error("Error in data submission:", xhr.responseText);
+            },
+            complete: function () {
+                // Hide the loading bar when the request is complete
+                updateLoadingBar(formData.title, prefix);
             }
         });
     });
@@ -350,7 +370,7 @@ function updateLoadingBar(title, prefix) {
         if (!data.current || data.current < data.total) {
             setTimeout(() => updateLoadingBar(title, prefix), 1000); // Update every second
         } else {
-            showPDF(data.text, title);
+            deliverPDF(data.text, title);
             // Hide the loading bar when processing is complete
             $('#' + prefix + '-loading-bar-container').hide();
         }
@@ -358,7 +378,7 @@ function updateLoadingBar(title, prefix) {
 }
 
 // JavaScript Part
-function showPDF(text, title) {
+function deliverPDF(text, title) {
     // Prepare the data to be sent in the request
     const data = JSON.stringify({text: text, title: title});
 
