@@ -179,7 +179,7 @@ def create_pdf(text, title):
 
 def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_length):
     # Assuming read_file and transform_text are defined elsewhere
-    segmented_text = read_file(os.path.join('/uploaded_books', filename))
+    segmented_text = read_file(os.path.join('/tmp/uploaded_books', filename))
     
     transformed_book = []
     for index, segment in enumerate(segmented_text):
