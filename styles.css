@@ -114,3 +114,25 @@ button {
 #api-key-note {
     margin-top: 8px;;
 }
+
+#loading-bar-container {
+    display: none;
+    position: relative;
+    background-color: #ddd;
+}
+
+#loading-bar {
+    width: 0%;
+    height: 20px;
+    background-color: #4CAF50;
+    text-align: center;
+    line-height: 20px;
+    color: white;
+}
+
+#loading-percent {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px;
+}

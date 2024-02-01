@@ -4,3 +4,4 @@ requests
 tiktoken
 cryptography
 gunicorn
+fpdf

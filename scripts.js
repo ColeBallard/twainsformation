@@ -1,15 +1,15 @@
 $(document).ready(function () {
     loadUserData();
 
-    $('#save-api-key-btn').click(function(e) {
+    $('#save-api-key-btn').click(function (e) {
         e.preventDefault();
-        
+
         testOpenAIKey().then(result => console.log(result));
 
         saveUserData();
     });
 
-    $('#style-changer-tab').click(function(e) {
+    $('#style-changer-tab').click(function (e) {
         e.preventDefault();
         $('#style-changer').show();
         $('#book-writer').hide();
@@ -20,7 +20,7 @@ $(document).ready(function () {
         $('#book-condenser-tab').removeClass('active');
     });
 
-    $('#book-writer-tab').click(function(e) {
+    $('#book-writer-tab').click(function (e) {
         e.preventDefault();
         $('#style-changer').hide();
         $('#book-writer').show();
@@ -31,7 +31,7 @@ $(document).ready(function () {
         $('#book-condenser-tab').removeClass('active');
     });
 
-    $('#book-condenser-tab').click(function(e) {
+    $('#book-condenser-tab').click(function (e) {
         e.preventDefault();
         $('#style-changer').hide();
         $('#book-writer').hide();
@@ -42,7 +42,7 @@ $(document).ready(function () {
         $('#style-changer-tab').removeClass('active');
     });
 
-    $('#api-key-btn').click(function(e) {
+    $('#api-key-btn').click(function (e) {
         e.preventDefault();
         $('#style-changer').hide();
         $('#book-writer').hide();
@@ -58,7 +58,7 @@ $(document).ready(function () {
     $('#book-condenser').hide();
     $('#api-key').show();
 
-    $('#addInputBtn').click(function() {
+    $('#addInputBtn').click(function () {
         addInputField();
         updateLevels();
     });
@@ -92,6 +92,13 @@ $(document).ready(function () {
             return; // Stop the function if validation fails
         }
 
+        // Show the loading bar
+        $('#loading-bar-container').show();
+        $('#loading-bar').css('width', '0%');
+        $('#loading-percent').text('0%'); // Reset the text
+
+        var title = $('#title').val().trim();
+
         var formData = new FormData(this);
         var fileInput = document.getElementById('fileUpload');
         formData.append("file", fileInput.files[0]);
@@ -103,14 +110,30 @@ $(document).ready(function () {
             data: formData,
             contentType: false,
             processData: false,
+            xhr: function () {
+                var xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = evt.loaded / evt.total;
+                        // Update loading bar width
+                        $('#loading-bar').css('width', percentComplete * 100 + '%');
+                    }
+                }, false);
+                return xhr;
+            },
             success: function (response) {
-                // Assuming the response is the text you want to display
-                $('#style-changer-response').html(response);
+                
             },
             error: function (xhr, status, error) {
                 // Handle any errors here
                 console.error("Error: " + error);
                 $('#style-changer-response').html("An error occurred: " + error);
+            },
+            complete: function () {
+                // Hide the loading bar when the request is complete
+                updateLoadingBar();
+                // Assuming the response is the text you want to display
+                showPDF('', title);
             }
         });
     });
@@ -133,17 +156,17 @@ $(document).ready(function () {
             return; // Stop the function if validation fails
         }
 
-        let formData = {'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim(), "api_key": $("#api-key-input").val()};
-    
+        let formData = { 'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim(), "api_key": $("#api-key-input").val() };
+
         $.ajax({
             type: "POST",
             url: "/book-writer",
             contentType: "application/json",
             data: JSON.stringify(formData),
-            success: function(response) {
+            success: function (response) {
                 console.log("Data submitted successfully:", response);
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("Error in data submission:", xhr.responseText);
             }
         });
@@ -156,8 +179,8 @@ function addInputField() {
 }
 
 function createDepthControlInput() {
-    let inputGroup = $('<div>', { 
-        'class': 'input-group mb-2', 
+    let inputGroup = $('<div>', {
+        'class': 'input-group mb-2',
         'data-depth': '1',
         css: { 'padding-left': '20px' }
     });
@@ -171,7 +194,7 @@ function createDepthControlInput() {
         type: 'button',
         'class': 'btn btn-outline-secondary',
         text: '>',
-        click: function() {
+        click: function () {
             adjustDepth(inputGroup, true);
         }
     });
@@ -180,7 +203,7 @@ function createDepthControlInput() {
         type: 'button',
         'class': 'btn btn-outline-secondary',
         text: '<',
-        click: function() {
+        click: function () {
             adjustDepth(inputGroup, false);
         }
     });
@@ -189,7 +212,7 @@ function createDepthControlInput() {
         type: 'button',
         'class': 'btn btn-outline-danger',
         text: 'X',
-        click: function() { deleteInputField(inputGroup); } // Corrected event handler
+        click: function () { deleteInputField(inputGroup); } // Corrected event handler
     });
 
     let input = $('<input>', {
@@ -219,7 +242,7 @@ function adjustDepth(element, isIndent) {
 function updateLevels() {
     let levelNumbers = [0]; // Initialize level numbers
 
-    $('#inputContainer').children('.input-group').each(function() {
+    $('#inputContainer').children('.input-group').each(function () {
         let depth = parseInt($(this).attr('data-depth'));
 
         while (levelNumbers.length - 1 > depth) {
@@ -244,7 +267,7 @@ function deleteInputField(element) {
 function gatherFormData() {
     let inputData = [];
 
-    $('#inputContainer').find('.input-group').each(function() {
+    $('#inputContainer').find('.input-group').each(function () {
         let level = $(this).find('.level-indicator').text();
         let value = $(this).find('input[type="text"]').val();
 
@@ -311,4 +334,50 @@ async function testOpenAIKey() {
     } catch (error) {
         return { valid: false, message: 'Failed to test API key.', error: error };
     }
+}
+
+// Function to periodically fetch progress and update the loading bar
+function updateLoadingBar() {
+    $.get('/progress', function (data) {
+        if (data.current && data.total) {
+            var progress = (data.current / data.total) * 100;
+            $('#loading-bar').css('width', progress + '%');
+            $('#loading-percent').text(Math.round(progress) + '%'); // Update the text
+        }
+
+        if (!data.current || data.current < data.total) {
+            setTimeout(updateLoadingBar, 1000); // Update every second
+        } else {
+            // Hide the loading bar when processing is complete
+            $('#loading-bar-container').hide();
+        }
+    });
+}
+
+// JavaScript Part
+function showPDF(text, title) {
+    $.ajax({
+        type: 'POST',
+        url: '/create-pdf',
+        data: JSON.stringify({text: text, title: title}),
+        contentType: "application/json",
+        dataType: 'json',
+        success: function(response) {
+            response.pdf_url = '/static' + response.pdf_url;
+
+            console.log(response.pdf_url);
+
+            if (response.pdf_url) {
+                $('#pdf-viewer').attr('src', response.pdf_url);
+                $('#pdf-viewer-container').show();
+            } else {
+                console.error("Error: PDF not found");
+                // Handle the error, maybe display a message to the user
+            }
+        },
+        error: function() {
+            console.error("Error creating PDF");
+            // Handle the error appropriately
+        }
+    });
 }

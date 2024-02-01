@@ -1,11 +1,12 @@
-import webbrowser
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, url_for
 from werkzeug.utils import secure_filename
+from fpdf import FPDF
 import os
 import re
 import datetime
 import requests
 import tiktoken
+import threading
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -21,22 +22,16 @@ class OutlineNode:
     def is_endpoint(self):
         return len(self.children) == 0
 
+progress_data = {}
+
 # ROUTES
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     return send_from_directory('.', 'index.html')
 
-@app.route('/<path:filename>')
-def static_files(filename):
-    return send_from_directory('.', filename)
-
 @app.route('/style-changer', methods=['POST'])
 def submit_style_changer_form():
-    form_type = request.form.get('form_id')
-
-    print(form_type)
-
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
@@ -67,11 +62,14 @@ def submit_style_changer_form():
     chatgpt_model = form.get('chatgptModel')
     api_key = form.get('api_key')
 
-    transformed_book = [transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length) for index, segment in enumerate(segmented_text)]
+    # Start the processing in a separate thread
+    threading.Thread(target=process_file, args=(filename, title, author, prompt, chatgpt_model, api_key, total_length)).start()
+
+    # transformed_book = [transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length) for index, segment in enumerate(segmented_text)]
 
     # Save or process the transformed book
-    with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-        file.write(' '.join(transformed_book))
+    # with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
+    #     file.write(' '.join(transformed_book))
 
     return jsonify({'message': 'File uploaded successfully'}), 200
     
@@ -92,21 +90,92 @@ def submit_book_writer_form():
 
     endpoints = ['They are attacked by the dark sorcerer, Malcor, who has been following them']
 
-    result_list = [write_text(title, endpoint, chatgpt_model, api_key, total_length) for endpoint in endpoints]
+    outline_descriptions = [write_text(title, endpoint, chatgpt_model, api_key, total_length, 'outline') for endpoint in endpoints]
 
-    final_text = '\n'.join(result_list)
+    outline_descriptions_list = '\n'.join(outline_descriptions)
 
-    split_list = final_text.split('\n')
+    split_list = outline_descriptions_list.split('\n')
 
     filtered_paragraphs = [p for p in split_list if re.match(r'^\d+\.', p)]
 
     print(filtered_paragraphs)
 
+    final_text = [write_text(title, filtered_paragraph, chatgpt_model, api_key, total_length, 'outline description') for filtered_paragraph in filtered_paragraphs]
+
     # Save or process the transformed book
     with open(f'{title} {datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt', 'w') as file:
-        file.write(' '.join(endpoints))
+        file.write(' '.join(final_text))
 
     return jsonify({'message': 'File uploaded successfully'}), 200
+
+@app.route('/progress')
+def progress():
+    return jsonify(progress_data)
+
+# Flask route to create and serve PDF
+@app.route('/create-pdf', methods=['POST'])
+def pdf_route():
+    data = request.json
+    relative_pdf_path = create_pdf(data['text'], data['title'])
+    
+    # Generate the URL for the PDF
+    pdf_url = url_for('static', filename=relative_pdf_path)
+    print(pdf_url)  # For debugging
+
+    return jsonify({'pdf_url': pdf_url})
+
+def create_pdf(text, title):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Add title page
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt=title, ln=True, align='C')
+
+    # Add content
+    pdf.set_font("Arial", size=12)
+    for line in text.split('\n'):
+        pdf.cell(0, 10, txt=line, ln=True)
+
+    # Define the directory where you want to save the PDF
+    pdf_directory = os.path.join(app.root_path, 'static', 'transformed_books')
+    
+    # Check if the directory exists, and create it if it doesn't
+    if not os.path.exists(pdf_directory):
+        os.makedirs(pdf_directory)
+
+    # Sanitize and format the filename
+    safe_title = secure_filename(title).replace(' ', '_')
+    pdf_full_path = os.path.join(pdf_directory, f"{safe_title}.pdf")
+
+    # Save the PDF file
+    pdf.output(pdf_full_path)
+
+    # Return the relative path from the static folder
+    relative_path = os.path.join('transformed_books', f"{safe_title}.pdf").replace('\\', '/')
+    return relative_path
+
+def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_length):
+    # Assuming read_file and transform_text are defined elsewhere
+    segmented_text = read_file(os.path.join('/uploaded_books', filename))
+    
+    transformed_book = []
+    for index, segment in enumerate(segmented_text):
+        transformed_segment = transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length)
+        transformed_book.append(transformed_segment)
+        
+        # Update progress
+        progress_data['current'] = index + 1
+        progress_data['total'] = total_length
+    
+    # # Save the transformed book
+    # with open(os.path.join('/transformed_books', f'{title}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.txt'), 'w') as file:
+    #     file.write(' '.join(transformed_book))
+
+    # Clear or update the progress data when done
+    progress_data.clear()
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
@@ -129,8 +198,11 @@ def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index
     except requests.RequestException as e:
         raise SystemExit(e)
 
-def write_text(title, prompt, chatgpt_model, api_key, total_length):
-    instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this via a numbered list, filling in the gaps where necessary?'
+def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_description):
+    if outline_or_description == 'outline':
+        instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this via a numbered list, filling in the gaps where necessary?'
+    elif outline_or_description == 'outline description':
+        instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this descrption, filling in the gaps where necessary?'
 
     url = 'https://api.openai.com/v1/chat/completions'
     headers = {
@@ -158,8 +230,8 @@ def read_file(file_path):
 
     segmented_text = segment_text(combined_content, 4096)
 
-    print(len(segmented_text))
-    print(num_tokens_from_string(segmented_text[0], 'cl100k_base'))
+    print(f'Total characters: {len(segmented_text)}')
+    print(f'Total tokens: {num_tokens_from_string(segmented_text[0], 'cl100k_base')}')
 
     return segmented_text
 
