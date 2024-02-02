@@ -31,11 +31,17 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
 
 Must have an Open-AI API Key.
 
-## Contribution
-
-If you have an idea or want to report a bug, please create an issue.
-
 ## Usage
+
+1. [Create an OpenAI account and get an API Key.](https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt)
+
+2. Go to [https://twainsformation-a15e0b6a5751.herokuapp.com/](https://twainsformation-a15e0b6a5751.herokuapp.com/).
+
+3. Press the API Key button, then paste your OpenAI API Key in the designated input field.
+
+4. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
+
+## Contribution
 
 1. Clone the respository.
 
@@ -63,7 +69,7 @@ python app.py
 
 7. Download a publicly-available book in text-file format. Some good places to look are [Project Gutenberg](https://www.gutenberg.org/) and [Internet Archive](https://archive.org/).
 
-8. Write your OpenAI API Key in the designated input field, upload a text file, choose a prompt, and wait for ChatGPT to transform the piece of literature.
+8. Press the API Key button, then paste your OpenAI API Key in the designated input field.
 
 9. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
 
