@@ -146,7 +146,7 @@ def create_pdf(text, title):
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Append the timestamp to the safe_title
-    safe_title = f"{safe_title}{timestamp}.pdf"
+    safe_title = f"{safe_title}_{timestamp}.pdf"
 
     pdf_full_path = os.path.join(pdf_directory, safe_title)
 
@@ -227,10 +227,18 @@ def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index
         raise SystemExit(e)
 
 def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_description):
-    if outline_or_description == 'outline':
-        instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
-    elif outline_or_description == 'outline description':
-        instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this description, filling in the gaps where necessary?'
+    reality = 'fiction'
+
+    if reality == 'fiction':
+        if outline_or_description == 'outline':
+            instruction = f'Here is a part of an outline from the story {title}. {prompt}. Can you expand upon this using a numbered list (1-10) that lays out a series of events for this part of the outline?'
+        elif outline_or_description == 'outline description':
+            instruction = f'Here is a description of an outline from the story {title}. {prompt}. Can you write this part of the story, filling in the gaps where necessary?'
+    elif reality == 'non-fiction':
+        if outline_or_description == 'outline':
+            instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
+        elif outline_or_description == 'outline description':
+            instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this description, filling in the gaps where necessary?'
 
     print(instruction)
 
