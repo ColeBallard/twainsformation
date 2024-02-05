@@ -175,35 +175,35 @@ def process_file(filename, title, author, prompt, chatgpt_model, api_key, total_
 
 def process_outline(title, paragraphs, chatgpt_model, api_key):
     total_length = len(paragraphs)
+    estimated_total_length = total_length * 20
+    progress_data['total'] = estimated_total_length
 
-    transformed_paragraphs = []
+    outlines = []
     for index, paragraph in enumerate(paragraphs):
-        transformed_paragraph = write_text(title, paragraph, chatgpt_model, api_key, total_length, 'outline')
-        transformed_paragraphs.append(transformed_paragraph)
+        outline = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'outline')
+        outlines.append(outline)
         
         # Update progress
-        progress_data['current'] = total_length - 1 if index + 1 == total_length else index + 1
-        progress_data['total'] = total_length
+        progress_data['current'] = progress_data['total']  - 1 if progress_data['current'] + 1 == progress_data['total']  else progress_data['current'] + 1
 
-    outline_descriptions_list = '\n'.join(transformed_paragraphs)
+    outline_descriptions = '\n'.join(outlines)
+    outline_descriptions = outline_descriptions.split('\n')
+    outline_descriptions = [p for p in outline_descriptions if re.match(r'^\d+\.', p)]
 
-    print(outline_descriptions_list)
+    total_length += len(outline_descriptions)
+    estimated_total_length = len(paragraphs) + (len(filtered_paragraphs) * 2)
+    progress_data['total'] = estimated_total_length
 
-    split_list = outline_descriptions_list.split('\n')
-
-    filtered_paragraphs = [p for p in split_list if re.match(r'^\d+\.', p)]
-
-    total_length = len(filtered_paragraphs)
-
-    final_transformed_paragraphs = []
-    for index, paragraph in enumerate(filtered_paragraphs):
-        transformed_paragraph = write_text(title, paragraph, chatgpt_model, api_key, total_length, 'outline description')
-        final_transformed_paragraphs.append(transformed_paragraph)
+    expanded_outlines = []
+    for index, paragraph in enumerate(outline_descriptions):
+        outline_description = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'outline description')
+        expanded_outlines.append(outline_description)
         
         # Update progress
-        progress_data['current'] = index + 1
-        progress_data['total'] = total_length
-        progress_data['text'] = ''.join(final_transformed_paragraphs)
+        progress_data['current'] = progress_data['total']  - 1 if progress_data['current'] + 1 == progress_data['total']  else progress_data['current'] + 1
+
+    # Store final text in progress
+    progress_data['text'] = ''.join(expanded_outlines)
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
