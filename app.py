@@ -178,6 +178,8 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
     estimated_total_length = total_length * 20
     progress_data['total'] = estimated_total_length
 
+    progress_data['current'] = 0
+
     outlines = []
     for index, paragraph in enumerate(paragraphs):
         outline = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'outline')
@@ -191,7 +193,7 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
     outline_descriptions = [p for p in outline_descriptions if re.match(r'^\d+\.', p)]
 
     total_length += len(outline_descriptions)
-    estimated_total_length = len(paragraphs) + (len(filtered_paragraphs) * 2)
+    estimated_total_length = len(paragraphs) + (len(outline_descriptions) * 2)
     progress_data['total'] = estimated_total_length
 
     expanded_outlines = []
@@ -202,8 +204,21 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
         # Update progress
         progress_data['current'] = progress_data['total']  - 1 if progress_data['current'] + 1 == progress_data['total']  else progress_data['current'] + 1
 
+    expanded_outlines = segment_text(''.join(expanded_outlines), 4096)
+
+    total_length += len(expanded_outlines)
+    progress_data['total'] = total_length
+
+    final_text = []
+    for index, paragraph in enumerate(expanded_outlines):
+        final_segment = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'expanded outline')
+        final_text.append(final_segment)
+        
+        # Update progress
+        progress_data['current'] = progress_data['current'] + 1
+
     # Store final text in progress
-    progress_data['text'] = ''.join(expanded_outlines)
+    progress_data['text'] = ''.join(final_text)
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
@@ -234,6 +249,8 @@ def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_d
             instruction = f'Here is a part of an outline from the story {title}. {prompt}. Can you expand upon this using a numbered list (1-10) that lays out a series of events for this part of the outline?'
         elif outline_or_description == 'outline description':
             instruction = f'Here is a description of an outline from the story {title}. {prompt}. Can you write this part of the story, filling in the gaps where necessary?'
+        elif outline_or_description == 'expanded outline':
+            instruction = f'Here is a part of a rough draft from the story {title}. {prompt}. Can you make this more cohesive?'
     elif reality == 'non-fiction':
         if outline_or_description == 'outline':
             instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
