@@ -246,11 +246,11 @@ def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_d
 
     if reality == 'fiction':
         if outline_or_description == 'outline':
-            instruction = f'Here is a part of an outline from the story {title}. {prompt}. Can you expand upon this using a numbered list (1-10) that lays out a series of events for this part of the outline?'
+            instruction = f"Below is a segment from the outline of my story titled '{title}'. Based on this segment: {prompt}. Could you expand upon this by creating a numbered list (1-10) that outlines a series of events for this part of the story? Please ensure each event is detailed and contributes to the development of the plot or characters. Also, consider the logical progression of events and how they connect to the overall narrative. This list should help in further fleshing out the story's structure and guide the subsequent drafting process."
         elif outline_or_description == 'outline description':
-            instruction = f'Here is a description of an outline from the story {title}. {prompt}. Can you write this part of the story, filling in the gaps where necessary?'
+            instruction = f"Here is a section from the outline of my story titled {title}. Based on this outline: {prompt}. Please write this part of the story in a detailed narrative prose format, focusing on descriptive storytelling. Include descriptions of settings, characters' thoughts and dialogue, and actions, and ensure the story flows smoothly from one scene to the next. Avoid presenting the story as a script or an outline. Fill in the gaps as necessary to create a cohesive and engaging narrative."
         elif outline_or_description == 'expanded outline':
-            instruction = f'Here is a part of a rough draft from the story {title}. {prompt}. Can you make this more cohesive?'
+            instruction = f"Below is a segment from the rough draft of my story titled '{title}'. {prompt}. Could you revise this to make the narrative more cohesive? Focus on improving the flow of events, enhancing character development, and ensuring that the transitions between scenes are smooth. Additionally, please look for any inconsistencies in the plot or character actions and address them. My goal is to have a seamless narrative that clearly conveys the story's progression and deepens the reader's engagement with the characters and their journey."
     elif reality == 'non-fiction':
         if outline_or_description == 'outline':
             instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
