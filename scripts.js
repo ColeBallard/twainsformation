@@ -163,7 +163,9 @@ $(document).ready(function () {
         $('#' + prefix + '-loading-bar').css('width', '0%');
         $('#' + prefix + '-loading-percent').text('0%'); // Reset the text
 
-        let formData = { 'outline': gatherFormData(), 'title': $('#book-writer-title').val().trim(), "api_key": $("#api-key-input").val() };
+        let formData = gatherFormData();
+        formData['title'] = $('#book-writer-title').val().trim();
+        formData["api_key"] = $("#api-key-input").val();
 
         $.ajax({
             type: "POST",
@@ -193,6 +195,26 @@ $(document).ready(function () {
             }
         });
     });
+
+    // Event listener for when the selection changes
+    $('#book-writer-prompt-type').change(function() {
+        // Get the selected value
+        var selectedOption = $(this).val();
+        
+        // Hide both tabs initially
+        $('#book-writer-outline-tab').hide();
+        $('#book-writer-summary-tab').hide();
+
+        // Show the relevant tab based on the selected option
+        if (selectedOption === 'Outline') {
+            $('#book-writer-outline-tab').show();
+        } else if (selectedOption === 'Summary') {
+            $('#book-writer-summary-tab').show();
+        }
+    });
+
+    // Trigger the change event on page load to ensure the correct tab is shown
+    $('#book-writer-prompt-type').trigger('change');
 });
 
 function addInputField() {
@@ -287,16 +309,22 @@ function deleteInputField(element) {
 }
 
 function gatherFormData() {
-    let inputData = [];
+    let selectedPromptType = $('#book-writer-prompt-type').val();
+    let formData = {};
 
-    $('#inputContainer').find('.input-group').each(function () {
-        let level = $(this).find('.level-indicator').text();
-        let value = $(this).find('input[type="text"]').val();
+    if (selectedPromptType === 'Outline') {
+        let inputData = [];
+        $('#inputContainer').find('.input-group').each(function () {
+            let level = $(this).find('.level-indicator').text();
+            let value = $(this).find('input[type="text"]').val();
+            inputData.push({ value: value, level: level });
+        });
+        formData['outline'] = inputData;
+    } else if (selectedPromptType === 'Summary') {
+        formData['summary'] = $('#summaryTextarea').val().trim();
+    }
 
-        inputData.push({ value: value, level: level });
-    });
-
-    return inputData;
+    return formData;
 }
 
 function setLocalStorageItem(value) {
@@ -367,12 +395,13 @@ function updateLoadingBar(title, prefix) {
             $('#' + prefix + '-loading-percent').text(Math.round(progress) + '%'); // Update the text
         }
 
-        if (!data.current || data.current < data.total) {
-            setTimeout(() => updateLoadingBar(title, prefix), 1000); // Update every second
-        } else {
+        if (data.complete) {
             deliverPDF(data.text, title);
             // Hide the loading bar when processing is complete
             $('#' + prefix + '-loading-bar-container').hide();
+        }
+        else {
+            setTimeout(() => updateLoadingBar(title, prefix), 1000); // Update every second
         }
     });
 }
