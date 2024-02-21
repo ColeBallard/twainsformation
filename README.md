@@ -10,6 +10,7 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
   - Style change is applied to the entire piece
 - Create a long-form piece of literature based on comprehensive details
   - Use an outline
+- Export to pdf
 
 ## Future Features
 
@@ -20,7 +21,11 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
   - Condense into a few paragraphs
   - Condense into a few pages
   - Condense into 10-50 pages
-- Export to pdf
+
+## Note
+
+- The application **never** stores or uses your API Key outside of your own prompts. All of the code in this repository is public.
+- The application uses gpt-3.5-turbo and each tick mark on the loading bar is about .2 cents. Most prompts total out between 2 - 15 cents.
 
 ## Design
 
@@ -39,7 +44,15 @@ Must have an Open-AI API Key.
 
 3. Press the API Key button, then paste your OpenAI API Key in the designated input field.
 
-4. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
+4. Click on either the Style Changer or Book Writer tab.
+
+5. Fill out the forms and press the Submit button whenever your prompt is ready.
+
+6. The application will use iteration and strategic prompting to create a book.
+
+7. A pdf will automatically be downloaded whenever the loading bar gets to 100%.
+
+8. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
 
 ## Contribution
 
