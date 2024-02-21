@@ -77,13 +77,25 @@
         </div>
         <div id="book-writer">
             <form id="book-writer-form">
+                <span class="inputLabel">Prompt Type: </span><select id="book-writer-prompt-type" name="book-writer-prompt-type">
+                    <option value="Outline">Outline</option>
+                    <option value="Summary">Summary</option>
+                </select>
+                <br />
                 <span class="inputLabel">Title: </span><input type="text" id="book-writer-title"
-                    name="book-writer-title" placeholder="Whispers of the Midnight Forest">
-                <div class="error" id="book-writer-title-Error"></div>
-                <div id="inputContainer">
-                    <!-- Dynamic input fields will be added here -->
+                        name="book-writer-title" placeholder="Whispers of the Midnight Forest">
+                <div id="book-writer-outline-tab">
+                    <div class="error" id="book-writer-title-Error"></div>
+                    <div id="inputContainer"></div>
+                        <!-- Dynamic input fields will be added here -->
+                    <button type="button" class="other-button" id="addInputBtn">Add Input</button>
                 </div>
-                <button type="button" class="other-button" id="addInputBtn">Add Input</button>
+                <div id="book-writer-summary-tab">
+                    <div class="form-group">
+                        <label for="summaryTextarea">Summary:</label>
+                        <textarea class="form-control" id="summaryTextarea" name="summaryTextarea" rows="5" placeholder="Enter your summary here..."></textarea>
+                    </div>
+                </div>  
                 <button type="submit" class="submit-button">Submit</button>
             </form>
             <!-- Add the loading bar container -->

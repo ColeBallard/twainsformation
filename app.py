@@ -8,6 +8,8 @@ import requests
 import tiktoken
 import threading
 
+import prompt_templates as pt
+
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 class OutlineNode:
@@ -69,21 +71,23 @@ def submit_style_changer_form():
     
 @app.route('/book-writer', methods=['POST'])
 def submit_book_writer_form():
-    print(request.json)
+    progress_data['complete'] = False
 
-    data = request.json['outline']
-    title = request.json['title']
-    api_key = request.json['api_key']
-
-    tree = parse_to_tree(data)
-    endpoints = concatenate_endpoints(tree)
-
+    data = request.json
+    title = data['title']
+    api_key = data['api_key']
     chatgpt_model = 'gpt-3.5-turbo'
 
-    # Start the processing in a separate thread
-    threading.Thread(target=process_outline, args=(title, endpoints, chatgpt_model, api_key)).start()
+    if 'outline' in data:
+        outline_data = data['outline']
+        tree = parse_to_tree(outline_data)
+        endpoints = concatenate_endpoints(outline_data)
+        threading.Thread(target=process_outline, args=(title, outline_data, chatgpt_model, api_key)).start()
+    elif 'summary' in data:
+        summary_data = data['summary']
+        threading.Thread(target=process_summary, args=(title, summary_data, chatgpt_model, api_key)).start()
 
-    return jsonify({'message': 'File uploaded successfully'}), 200
+    return jsonify({'message': 'Processing started successfully'}), 200
 
 @app.route('/progress')
 def progress():
@@ -177,12 +181,12 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
     total_length = len(paragraphs)
     estimated_total_length = total_length * 20
     progress_data['total'] = estimated_total_length
-
+    
     progress_data['current'] = 0
 
     outlines = []
     for index, paragraph in enumerate(paragraphs):
-        outline = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'outline')
+        outline = write_text(title, [paragraph], chatgpt_model, api_key, estimated_total_length, 'outline')
         outlines.append(outline)
         
         # Update progress
@@ -198,7 +202,7 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
 
     expanded_outlines = []
     for index, paragraph in enumerate(outline_descriptions):
-        outline_description = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'outline description')
+        outline_description = write_text(title, [paragraph], chatgpt_model, api_key, estimated_total_length, 'outline description')
         expanded_outlines.append(outline_description)
         
         # Update progress
@@ -211,7 +215,7 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
 
     final_text = []
     for index, paragraph in enumerate(expanded_outlines):
-        final_segment = write_text(title, paragraph, chatgpt_model, api_key, estimated_total_length, 'expanded outline')
+        final_segment = write_text(title, [paragraph], chatgpt_model, api_key, estimated_total_length, 'expanded outline')
         final_text.append(final_segment)
         
         # Update progress
@@ -219,6 +223,68 @@ def process_outline(title, paragraphs, chatgpt_model, api_key):
 
     # Store final text in progress
     progress_data['text'] = ''.join(final_text)
+    progress_data['complete'] = True
+
+def process_summary(title, summary, chatgpt_model, api_key):
+    progress_data['total'] = 51
+    progress_data['current'] = 0
+
+    enhanced_summary = write_text(title, [summary], 'gpt-4', api_key, progress_data['total'], 'summary')
+    # Update progress
+    progress_data['current'] += 1
+
+    parts_of_summary = write_text(title, [enhanced_summary], 'gpt-4', api_key, progress_data['total'], 'detailed summary')
+    # Update progress
+    progress_data['current'] += 1
+
+    # Split the string at each "Chapter X"
+    pattern = r'(?=Chapter \d+)'  # Lookahead for 'Chapter ' followed by one or more digits
+    parts_of_summary_expanded = re.split(pattern, parts_of_summary)
+
+    # Filter out any empty strings that might result from the split
+    parts_of_summary_expanded = [part for part in parts_of_summary_expanded if part.strip()]
+
+    print(parts_of_summary_expanded)
+
+    # Update progress
+    progress_data['total'] = progress_data['current'] + (len(parts_of_summary_expanded) * 2) + 1
+
+    parts_list = []
+    for index, part in enumerate(parts_of_summary_expanded):
+        expanded_part = write_text(title, [enhanced_summary, parts_of_summary, part], chatgpt_model, api_key, progress_data['total'], 'summary parts')
+        parts_list.append(expanded_part)
+        
+        # Update progress
+        progress_data['current'] += 1
+
+    # Split the strings and get the new list
+    halved_parts_list = split_strings_evenly_by_paragraphs(parts_list)
+
+    # Update progress
+    progress_data['total'] = progress_data['current'] + (len(halved_parts_list) / 2) + 1
+
+    cohesive_parts_list = []
+    for index, expanded_part in enumerate(halved_parts_list):
+        if index == 0:
+            cohesive_parts_list.append(expanded_part)
+        elif (index % 2) == 1:
+            if index == (len(halved_parts_list) - 1):
+                cohesive_parts_list.append(expanded_part)
+            else:
+                cohesive_part = write_text(title, [halved_parts_list[index], halved_parts_list[index + 1]], chatgpt_model, api_key, progress_data['total'], 'expanded parts')
+                cohesive_parts_list.append(cohesive_part)
+        elif index == (len(halved_parts_list) - 1):
+            cohesive_parts_list.append(expanded_part)
+        else:
+            continue
+        
+        # Update progress
+        progress_data['current'] += 1
+
+    # Store final text in progress
+    progress_data['text'] = ''.join(cohesive_parts_list)
+    progress_data['complete'] = True
+
 
 def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index, total_length):
     instruction = f'Here is a section of {title} by {author}. {prompt}: {segment}'
@@ -241,21 +307,23 @@ def transform_text(title, author, prompt, chatgpt_model, api_key, segment, index
     except requests.RequestException as e:
         raise SystemExit(e)
 
-def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_description):
-    reality = 'fiction'
+def write_text(title, prompt, chatgpt_model, api_key, total_length, prompt_level):
+    instruction = ""
 
-    if reality == 'fiction':
-        if outline_or_description == 'outline':
-            instruction = f"Below is a segment from the outline of my story titled '{title}'. Based on this segment: {prompt}. Could you expand upon this by creating a numbered list (1-10) that outlines a series of events for this part of the story? Please ensure each event is detailed and contributes to the development of the plot or characters. Also, consider the logical progression of events and how they connect to the overall narrative. This list should help in further fleshing out the story's structure and guide the subsequent drafting process."
-        elif outline_or_description == 'outline description':
-            instruction = f"Here is a section from the outline of my story titled {title}. Based on this outline: {prompt}. Please write this part of the story in a detailed narrative prose format, focusing on descriptive storytelling. Include descriptions of settings, characters' thoughts and dialogue, and actions, and ensure the story flows smoothly from one scene to the next. Avoid presenting the story as a script or an outline. Fill in the gaps as necessary to create a cohesive and engaging narrative."
-        elif outline_or_description == 'expanded outline':
-            instruction = f"Below is a segment from the rough draft of my story titled '{title}'. {prompt}. Could you revise this to make the narrative more cohesive? Focus on improving the flow of events, enhancing character development, and ensuring that the transitions between scenes are smooth. Additionally, please look for any inconsistencies in the plot or character actions and address them. My goal is to have a seamless narrative that clearly conveys the story's progression and deepens the reader's engagement with the characters and their journey."
-    elif reality == 'non-fiction':
-        if outline_or_description == 'outline':
-            instruction = f'Here is a part of an outline from the book {title}. {prompt}. Can you expand upon this by making a numbered list (1-10), filling in the gaps where necessary?'
-        elif outline_or_description == 'outline description':
-            instruction = f'Here is a description of an outline from the book {title}. {prompt}. Can you elaborate on this description, filling in the gaps where necessary?'
+    if prompt_level == 'outline':
+        instruction = pt.outline_template_v0010[0].format(title=title, prompt=prompt[0])
+    elif prompt_level == 'outline description':
+        instruction = pt.outline_template_v0010[1].format(title=title, prompt=prompt[0])
+    elif prompt_level == 'expanded outline':
+        instruction = pt.outline_template_v0010[2].format(title=title, prompt=prompt[0])
+    if prompt_level == 'summary':
+        instruction = pt.summary_template_v0002[0].format(title=title, summary=prompt[0])
+    elif prompt_level == 'detailed summary':
+        instruction = pt.summary_template_v0002[1].format(title=title, summary=prompt[0])
+    elif prompt_level == 'summary parts':
+        instruction = pt.summary_template_v0002[2].format(title=title, summary=prompt[0], parts=prompt[1], part=prompt[2])
+    elif prompt_level == 'expanded parts':
+        instruction = pt.summary_template_v0002[3].format(title=title, section1=prompt[0], section2=prompt[1])
 
     print(instruction)
 
@@ -276,6 +344,35 @@ def write_text(title, prompt, chatgpt_model, api_key, total_length, outline_or_d
         return response.json()['choices'][0]['message']['content']
     except requests.RequestException as e:
         raise SystemExit(e)
+    
+def split_strings_evenly_by_paragraphs(original_strings):
+    new_list = []
+
+    for s in original_strings:
+        # Split the string into paragraphs
+        paragraphs = s.split('\n\n')
+        
+        # Find the split point
+        split_point = len(paragraphs) // 2 + len(paragraphs) % 2  # Ensure first half is equal or larger
+        
+        # Split the paragraphs into two halves
+        first_half = '\n\n'.join(paragraphs[:split_point])
+        second_half = '\n\n'.join(paragraphs[split_point:])
+        
+        # Add the halves to the new list
+        new_list.extend([first_half, second_half])
+
+    return new_list
+
+def join_pairs_keep_ends(list_of_strings):
+    result_list = [list_of_strings[0]]  # Keep the first element
+    
+    for i in range(1, len(list_of_strings) - 1, 2):
+        joined_string = list_of_strings[i] + " " + list_of_strings[i + 1]  # Join i and i+1 elements
+        result_list.append(joined_string)
+    
+    result_list.append(list_of_strings[-1])  # Keep the last element
+    return result_list
 
 def read_file(file_path):
     combined_content = ''  # Initialize an empty string to accumulate the lines
