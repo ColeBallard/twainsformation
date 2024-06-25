@@ -2,7 +2,7 @@
 
 ## Description
 
-Toolkit powered by ChatGPT for creating, modifying the style of, and condensing a piece of literature.
+Web application powered by ChatGPT for creating, modifying the style of, and condensing a piece of literature.
 
 ## Features
 
