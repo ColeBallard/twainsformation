@@ -2,7 +2,7 @@
 
 ## Description
 
-Toolkit powered by ChatGPT for creating, modifying the style of, and condensing a piece of literature.
+Web application powered by ChatGPT for creating, modifying the style of, and condensing a piece of literature.
 
 ## Features
 
@@ -10,13 +10,14 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
   - Style change is applied to the entire piece
 - Create a long-form piece of literature based on comprehensive details
   - Use an outline
+  - Use a summary
 - Export to pdf
 
 ## Future Features
 
 - Create a long-form piece of literature based on comprehensive details
-  - Use beginning, middle, and end
-  - Use a plot
+  - Use nothing! Let ChatGPT handle all the ideas
+  - Use your likes and dislikes to create a novel fit for you
 - Condense a piece of literature
   - Condense into a few paragraphs
   - Condense into a few pages
@@ -25,7 +26,7 @@ Toolkit powered by ChatGPT for creating, modifying the style of, and condensing 
 ## Note
 
 - The application **never** stores or uses your API Key outside of your own prompts. All of the code in this repository is public.
-- The application uses gpt-3.5-turbo and each tick mark on the loading bar is about .2 cents. Most prompts total out between 2 - 15 cents.
+- The application uses gpt-3.5-turbo for the vast majority of prompts and each tick mark on the loading bar is about .2 cents. Most prompts total out between 2 - 15 cents.
 
 ## Design
 
