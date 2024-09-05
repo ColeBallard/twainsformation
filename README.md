@@ -87,4 +87,4 @@ python app.py
 
 9. Feel free to leave feedback about the quality of the produced text [via email](https://coleb.io/contact).
 
-## **[Contact](https://coleb.io/contact)**
+## **[Contact](https://github.com/ColeBallard/coleballard.github.io/blob/main/README.md)**
